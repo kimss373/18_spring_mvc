@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+	<!-- 
+	
+		# SELECT 쿼리문의 테이블 컬럼과 자바의 프로퍼티에 데이터를 바인딩(매핑) 하는 방법
+	
+			- POJO의 프로퍼티명과 Table의 컬럼명이 일치할경우는 (두단어가 이어지는 경우가 없을때) 
+			  스프링 프레임워크에서 테이블명과 POJO의 프로퍼티를 연결하여 준다.
+			  
+			- 일반적으로 POJO의 변수는 CamelCase를 사용하고 테이블의 변수는 SnakeCase 사용하여 
+			  두 값이 일치하지 않는 경우는 추가적으로 데이터를 매핑하도록 구현해야 한다. 
+		
+				[ 예시 ]
+				
+			  [POJO Property]	   	       [Table Column]
+				productCd	    <바인딩>	 PRODUCT_CD
+				productNm	    <바인딩>     PRODUCT_NM
+				enrollDt	    <바인딩>     ENROLL_DT
+	
+		- 연결방법
+			
+			예시 1) mybatis-config.xml파일에 언더스코어(_)를 CamelCase로 매핑하는 설정을 추가한다.
+		
+			<settings>
+				<setting name="mapUnderscoreToCamelCase" value="true"/>
+			</settings>
+	
+	 -->
+
+<mapper namespace="m2d">
+
+	<!-- DTO List 반환 예시1 -->
+	<select id="ex01" resultType="com.spring.mvc.dto.ProductDTO">
+		SELECT
+				*
+		FROM
+				PRODUCT
+	</select>
+	
+	<!-- DTO List 반환 예시2 -->
+	<select id="ex02" resultType="com.spring.mvc.dto.BrandDTO">
+		SELECT
+				*
+		FROM
+				BRAND
+	</select>
+
+	<!-- DTO 반환 예시1 -->
+	<select id="ex03" resultType="com.spring.mvc.dto.ProductDTO">
+		SELECT
+				*
+		FROM
+				PRODUCT
+		WHERE
+				PRODUCT_CD = 1
+	</select>
+	
+	<!-- DTO 반환 예시2 -->
+	<select id="ex04" resultType="com.spring.mvc.dto.BrandDTO">
+		SELECT
+				*
+		FROM
+				BRAND
+		WHERE
+				BRAND_CD = 'b1'
+	</select>
+	
+	<!-- 단일데이터 반환 예시1 -->
+	<select id="ex05" resultType="int">
+		SELECT
+				COUNT(*)
+		FROM
+				PRODUCT
+	</select>
+	
+	<!-- 단일데이터 반환 예시2 -->
+	<select id="ex06" resultType="double">
+		SELECT
+				AVG(PRICE)
+		FROM
+				PRODUCT
+	</select>
+	
+	<!-- 단일데이터 반환 예시3 -->
+	<select id="ex07" resultType="String">
+		SELECT
+				PRODUCT_NM
+		FROM
+				PRODUCT
+		WHERE
+				PRODUCT_CD = 1
+	</select>
+
+	<!--  
+
+	 	- SQL 내부의 특정 연산자가 (ex '>' , '<') 마이바티스 태그와 중첩되기 때문에
+	 	<![CDATA[]]>로 쿼리문을 감싸고 쿼리문을 작성한다.
+	 	     
+	-->
+	<!-- <![CDATA[]]> 사용예시  -->	
+	<select id="ex08" resultType="com.spring.mvc.dto.ProductDTO">
+		
+		<![CDATA[
+			SELECT
+					*
+			FROM
+					PRODUCT
+			WHERE	
+					PRICE < 1000000
+		]]> 
+	</select>
+	
+	
+	<!-- 
+	
+		예시 2)
+		 COLUMN에서 AS키워드를 작성하여 자바 DTO의 property와 바인딩시키거나 맵의 key값으로 지정한다.
+			
+		<select id = "" >
+			SELECT
+				컬럼1  AS DTO의 property 혹은 Map의 key
+				컬럼2  AS DTO의 property 혹은 Map의 key
+				컬럼3  DTO의 property 혹은 Map의 key    		< AS 키워드는 생략가능하다.
+				컬럼4  DTO의 property 혹은 Map의 key   
+			FROM
+				테이블명		
+		</select> 
+	 
+	-->
+	<!-- 테이블 컬럼과 자바 프로퍼티 바인딩 예시1 -->
+	<select id="ex09" resultType="hashmap">
+		SELECT
+				PRODUCT_CD 			AS productCd,
+				PRICE	   			AS price,
+				PRICE * 0.1 		tax,
+				PRICE + PRICE * 0.1 totalPrice
+		FROM
+				PRODUCT
+		
+	</select>
+	
+	
+	<!--  
+	
+		예시 3) resultMap태그를 추가로 작성한다.
+		
+		<resultMap id="getProduct" type="000.000.000.Product">  		<< 식별id	, POJO클래스 전체 경로
+       		<result property="productCode" column="PRODUCT_CODE"/>		<< 변수값   , 컬럼명
+       		<result property="productName" column="PRODUCT_NAME"/>
+    	</resultMap>
+    	
+    	<select id = ""  resultType="getProduct">						<< 식별id , resultMap의 id
+    		SELECT
+				PRODUCT_CODE
+				PRODUCT_NAME
+			FROM
+				PRODUCT		
+    	</select>
+
+		> resultType은 resultMap의 id와 매핑된다.
+	-->
+	
+	<!-- 테이블 컬럼과 자바 프로퍼티 바인딩 예시2 -->
+	<resultMap type="hashmap" id="productMap">
+		<result column="PRODUCT_CD" property="productCd"/>
+		<result column="PRICE" property="price"/>
+		<result column="tax" property="tax"/>
+		<result column="totalPrice" property="totalPrice"/>
+	</resultMap>
+	
+	<select id="ex10" resultMap="productMap">
+		SELECT
+				PRODUCT_CD 			AS PRODUCT_CD,
+				PRICE	   			AS PRICE,
+				PRICE * 0.1 		AS tax,
+				PRICE + PRICE * 0.1 AS totalPrice
+		FROM
+				PRODUCT
+		
+	</select>
+	
+	
+	<!-- 테이블 컬럼과 자바 프로퍼티 바인딩 예시3 -->
+	<resultMap type="hashmap" id="joinMap">
+		<result column="PRODUCT_CD" property="productCd"/>
+		<result column="PRODUCT_NM" property="productNm"/>
+		<result column="BRAND_CD"   property="brandCd"/>
+		<result column="BRAND_NM"   property="brandNm"/>
+		<result column="ACTIVE_YN"  property="activeYn"/>
+	</resultMap>
+	
+	<select id="ex11" resultMap="joinMap">
+		SELECT
+				P.PRODUCT_CD	AS PRODUCT_CD,
+				P.PRODUCT_NM	AS PRODUCT_NM,
+				B.BRAND_CD		AS BRAND_CD,
+				B.BRAND_NM		AS BRAND_NM,
+				B.ACTIVE_YN		AS ACTIVE_YN
+		FROM
+				PRODUCT P
+			 INNER JOIN BRAND B
+					 ON P.BRAND_CD = B.BRAND_CD		
+	</select>
+	
+
+</mapper>
